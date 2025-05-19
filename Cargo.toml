@@ -1,0 +1,29 @@
+[package]
+name = "shanks"
+version = "0.1.0-dev"
+edition = "2021"
+description = "A Checkers Engine written in Rust"
+categories = ["checkers", "engine", "shanks"]
+keywords = ["checkers", "engine", "shanks"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/0xkonsti/shanks"
+rust-version = "1.89.0"
+authors = ["Konstantin Opora <konstantinopora@gmail.com"]
+default-run = "shanks"
+
+[dependencies]
+shanks_cli = { path = "crates/shanks_cli", version = "0.1.0-dev" }
+
+clap = { version = "4.5", features = ["derive"] }
+
+[dev-dependencies]
+
+[[bin]]
+name = "shanks"
+path = "src/main.rs"
+
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.dependencies]

@@ -1,0 +1,21 @@
+[package]
+name = "shanks_core"
+version = "0.1.0-dev"
+edition = "2021"
+description = "Core functionality for the Shanks Checkers Engine"
+keywords = ["shanks"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/0xkonsti/shanks"
+rust-version = "1.89.0"
+authors = ["Konstantin Opora <konstantinopora@gmail.com"]
+
+[dependencies]
+shanks_util = { version = "0.1.0-dev", path = "../shanks_util" }
+
+colored = "3.0.0"
+
+[dev-dependencies]
+
+[lib]
+name = "shanks_core"
+path = "src/lib.rs"
