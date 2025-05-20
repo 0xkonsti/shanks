@@ -1,8 +1,11 @@
 pub(crate) mod bitboard;
 
-use super::{Color, Piece, Ply, Square};
+use super::{Color, GameState, Piece, Ply, Square};
 
 pub trait Backend: BackendClone {
+    /// Returns the current game state.
+    fn get_gamestate(&self) -> GameState;
+
     /// Returns the piece at the given square.
     /// If there is no piece at the square, returns None.
     fn get_piece(&self, square: Square) -> Option<Piece>;

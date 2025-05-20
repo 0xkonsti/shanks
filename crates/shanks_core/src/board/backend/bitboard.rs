@@ -6,7 +6,7 @@ use std::{
 use shanks_util::util::*;
 
 use super::Backend;
-use crate::board::{Color, Piece, PieceKind, Ply, PlyBuilder, Square};
+use crate::board::{Color, GameState, Piece, PieceKind, Ply, PlyBuilder, Square};
 
 const DEFAULT_BOARD_WHITE: u64 = 0x000000000055aa55;
 const DEFAULT_BOARD_BLACK: u64 = 0xaa55aa0000000000;
@@ -15,12 +15,13 @@ const DEFAULT_BOARD_KINGS: u64 = 0x0000000000000000;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct PliesState {
     state: u64,
+    color: Color,
     plies: Vec<Ply>,
 }
 
 impl PliesState {
     fn new() -> Self {
-        Self { state: 0, plies: Vec::new() }
+        Self { state: 0, color: Color::White, plies: Vec::new() }
     }
 }
 
@@ -136,6 +137,7 @@ impl Default for BitBoard {
             white: BitField::new(DEFAULT_BOARD_WHITE),
             black: BitField::new(DEFAULT_BOARD_BLACK),
             kings: BitField::new(DEFAULT_BOARD_KINGS),
+
             legal_plies: RefCell::new(PliesState::new()),
         }
     }
@@ -150,6 +152,22 @@ impl Hash for BitBoard {
 }
 
 impl Backend for BitBoard {
+    fn get_gamestate(&self) -> GameState {
+        let legal_plies = self.legal_plies.borrow();
+        if self.white.count() == 0 {
+            GameState::Win(Color::Black)
+        } else if self.black.count() == 0 {
+            GameState::Win(Color::White)
+        } else if legal_plies.color == Color::White && legal_plies.plies.is_empty() {
+            GameState::Win(Color::Black)
+        } else if legal_plies.color == Color::Black && legal_plies.plies.is_empty() {
+            GameState::Win(Color::White)
+        } else {
+            GameState::OnGoing
+        }
+        // TODO: Implement draw conditions
+    }
+
     fn get_piece(&self, square: Square) -> Option<Piece> {
         let index = square.index();
 
@@ -204,9 +222,13 @@ impl Backend for BitBoard {
     }
 
     fn get_legal_plies(&self, color: Color) -> Vec<Ply> {
-        if self.legal_plies.borrow().state == self.get_hash() {
-            println!("Using cached plies");
-            return self.legal_plies.borrow().plies.clone();
+        // Check cached plies
+        {
+            let legal_plies = self.legal_plies.borrow();
+            if legal_plies.state == self.get_hash() && legal_plies.color == color {
+                println!("Using cached plies");
+                return legal_plies.plies.clone();
+            }
         }
         self.legal_plies.replace(PliesState::new());
         let mut plies = Vec::new();
@@ -221,9 +243,15 @@ impl Backend for BitBoard {
             }
             plies.extend(square_plies);
         }
-        let mut legal_plies = self.legal_plies.borrow_mut();
-        legal_plies.state = self.get_hash();
-        legal_plies.plies = plies.clone();
+
+        // Update cache
+        {
+            let mut legal_plies = self.legal_plies.borrow_mut();
+            legal_plies.state = self.get_hash();
+            legal_plies.color = color;
+            legal_plies.plies = plies.clone();
+        }
+
         plies
     }
 

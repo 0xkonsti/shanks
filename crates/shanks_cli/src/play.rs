@@ -19,6 +19,7 @@ pub fn play(args: PlayArgs) {
     let mut input = String::new();
 
     loop {
+        //println!("{}", board.get_gamestate());
         print!("Enter a ply index (or 'exit' to quit): ");
         stdout.flush().unwrap();
         input.clear();
@@ -38,6 +39,11 @@ pub fn play(args: PlayArgs) {
             print!("{esc}c", esc = 27 as char);
             println!("Selected ply: {}", ply);
             board.ply(ply.clone());
+            let gamestate = board.get_gamestate();
+            if gamestate.is_over() {
+                println!("Game over! {}", gamestate);
+                break;
+            }
             println!("{}", board);
             println!("{} to move", board.to_move());
             println!("Legal plies:");

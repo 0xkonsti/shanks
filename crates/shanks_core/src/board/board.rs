@@ -2,7 +2,7 @@ use colored::Colorize;
 
 use super::{
     backend::{bitboard::BitBoard, Backend},
-    Color, Ply, Square,
+    Color, GameState, Ply, Square,
 };
 
 pub struct Board {
@@ -35,6 +35,10 @@ impl Board {
     pub fn get_ply(&self, index: usize) -> Option<Ply> {
         self.backend.get_legal_plies(self.current_color).get(index).cloned()
         //self.legal_plies.get(index)
+    }
+
+    pub fn get_gamestate(&self) -> GameState {
+        self.backend.get_gamestate()
     }
 
     pub fn to_move(&self) -> Color {
