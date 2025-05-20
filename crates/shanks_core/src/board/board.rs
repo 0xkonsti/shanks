@@ -10,13 +10,11 @@ pub struct Board {
 
     current_color: Color,
     selected: Option<Square>,
-    legal_plies: Vec<Ply>,
 }
 
 impl Board {
     pub fn new(backend: Box<dyn Backend>) -> Self {
-        let legal_plies = backend.get_legal_plies(Color::White);
-        Self { backend, current_color: Color::White, selected: None, legal_plies }
+        Self { backend, current_color: Color::White, selected: None }
     }
 
     /// Carries out the given ply on the board.
@@ -26,21 +24,29 @@ impl Board {
 
         self.current_color.swap();
         self.selected = None;
-        self.legal_plies = self.backend.get_legal_plies(self.current_color);
     }
 
     pub fn legal_plies(&self) {
-        for (i, ply) in self.legal_plies.iter().enumerate() {
+        for (i, ply) in self.backend.get_legal_plies(self.current_color).iter().enumerate() {
             println!("{}: {}", i, ply);
         }
     }
 
-    pub fn get_ply(&self, index: usize) -> Option<&Ply> {
-        self.legal_plies.get(index)
+    pub fn get_ply(&self, index: usize) -> Option<Ply> {
+        self.backend.get_legal_plies(self.current_color).get(index).cloned()
+        //self.legal_plies.get(index)
     }
 
     pub fn to_move(&self) -> Color {
         self.current_color
+    }
+
+    pub fn get_backend(&self) -> &Box<dyn Backend> {
+        &self.backend
+    }
+
+    pub fn get_backend_mut(&mut self) -> &mut Box<dyn Backend> {
+        &mut self.backend
     }
 }
 

@@ -2,7 +2,7 @@ pub(crate) mod bitboard;
 
 use super::{Color, Piece, Ply, Square};
 
-pub trait Backend {
+pub trait Backend: BackendClone {
     /// Returns the piece at the given square.
     /// If there is no piece at the square, returns None.
     fn get_piece(&self, square: Square) -> Option<Piece>;
@@ -33,5 +33,30 @@ pub trait Backend {
         self.remove_piece(ply.from());
         self.set_piece(ply.to(), ply.piece());
         self.remove_pieces(ply.captures());
+    }
+
+    /// Returns the number of man pieces for the given color.
+    fn man_count(&self, color: Color) -> u8;
+
+    /// Returns the number of king pieces for the given color.
+    fn king_count(&self, color: Color) -> u8;
+}
+
+pub trait BackendClone {
+    fn clone_box(&self) -> Box<dyn Backend>;
+}
+
+impl<T> BackendClone for T
+where
+    T: 'static + Backend + Clone,
+{
+    fn clone_box(&self) -> Box<dyn Backend> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn Backend> {
+    fn clone(&self) -> Box<dyn Backend> {
+        self.clone_box()
     }
 }

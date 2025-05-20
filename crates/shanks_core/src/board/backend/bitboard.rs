@@ -1,3 +1,8 @@
+use std::{
+    cell::RefCell,
+    hash::{Hash, Hasher},
+};
+
 use shanks_util::util::*;
 
 use super::Backend;
@@ -7,11 +12,25 @@ const DEFAULT_BOARD_WHITE: u64 = 0x000000000055aa55;
 const DEFAULT_BOARD_BLACK: u64 = 0xaa55aa0000000000;
 const DEFAULT_BOARD_KINGS: u64 = 0x0000000000000000;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct PliesState {
+    state: u64,
+    plies: Vec<Ply>,
+}
+
+impl PliesState {
+    fn new() -> Self {
+        Self { state: 0, plies: Vec::new() }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BitBoard {
     white: BitField,
     black: BitField,
     kings: BitField,
+
+    legal_plies: RefCell<PliesState>,
 }
 
 impl BitBoard {
@@ -103,6 +122,12 @@ impl BitBoard {
 
         (captures, plies)
     }
+
+    fn get_hash(&self) -> u64 {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
 }
 
 impl Default for BitBoard {
@@ -111,7 +136,16 @@ impl Default for BitBoard {
             white: BitField::new(DEFAULT_BOARD_WHITE),
             black: BitField::new(DEFAULT_BOARD_BLACK),
             kings: BitField::new(DEFAULT_BOARD_KINGS),
+            legal_plies: RefCell::new(PliesState::new()),
         }
+    }
+}
+
+impl Hash for BitBoard {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.white.hash(state);
+        self.black.hash(state);
+        self.kings.hash(state);
     }
 }
 
@@ -170,6 +204,11 @@ impl Backend for BitBoard {
     }
 
     fn get_legal_plies(&self, color: Color) -> Vec<Ply> {
+        if self.legal_plies.borrow().state == self.get_hash() {
+            println!("Using cached plies");
+            return self.legal_plies.borrow().plies.clone();
+        }
+        self.legal_plies.replace(PliesState::new());
         let mut plies = Vec::new();
         let mut capturing = false;
 
@@ -182,6 +221,17 @@ impl Backend for BitBoard {
             }
             plies.extend(square_plies);
         }
+        let mut legal_plies = self.legal_plies.borrow_mut();
+        legal_plies.state = self.get_hash();
+        legal_plies.plies = plies.clone();
         plies
+    }
+
+    fn man_count(&self, color: Color) -> u8 {
+        self.get_color_field(color).count() as u8
+    }
+
+    fn king_count(&self, color: Color) -> u8 {
+        self.get_color_field(color).intersection(self.kings).count() as u8
     }
 }

@@ -81,7 +81,7 @@ impl PlyBuilder {
 impl std::fmt::Display for Ply {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}-{}", self.from, self.to)?;
-        if self.promoted {
+        if self.promoted && !self.piece.is_king() {
             write!(f, "p")?;
         }
         for capture in &self.captures {

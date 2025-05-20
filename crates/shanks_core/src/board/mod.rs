@@ -5,7 +5,7 @@ mod piece;
 mod ply;
 mod square;
 
-pub use backend::Backend;
+pub use backend::{Backend, BackendClone};
 pub use board::Board;
 pub use gamestate::GameState;
 pub use piece::{Color, Piece, PieceKind};

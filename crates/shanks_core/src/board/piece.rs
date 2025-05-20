@@ -17,8 +17,9 @@ impl Color {
         }
     }
 
-    pub fn swap(&mut self) {
+    pub fn swap(&mut self) -> Self {
         *self = self.opposite();
+        *self
     }
 }
 
