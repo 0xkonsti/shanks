@@ -2,18 +2,24 @@ use shanks_core::board::{Backend, Board, Color};
 
 use crate::static_eval;
 
-const SEARCH_DEPTH: usize = 4;
+const SEARCH_DEPTH: usize = 16;
 
 pub struct Engine {
     maximizing_color: Color,
+
+    seen_states: std::collections::HashMap<u64, f64>,
 }
 
 impl Engine {
-    pub fn evaluate(&self, board: &mut Board) -> f64 {
-        self.search(board.get_backend_mut(), SEARCH_DEPTH)
+    pub fn new(maximizing_color: Color) -> Self {
+        Self { maximizing_color, seen_states: std::collections::HashMap::new() }
     }
 
-    pub fn search(&self, backend: &mut Box<dyn Backend>, depth: usize) -> f64 {
+    pub fn evaluate(&mut self, board: &Board) -> f64 {
+        self.search(board.get_backend(), SEARCH_DEPTH)
+    }
+
+    pub fn search(&mut self, backend: &Box<dyn Backend>, depth: usize) -> f64 {
         if depth == 0 {
             return static_eval::static_eval(backend, self.maximizing_color);
         }
@@ -42,47 +48,67 @@ impl Engine {
         if best_plies.len() == 1 {
             println!("Best move: {} ~ {}", best_plies[0], best_score);
         } else {
-            println!("Best moves: {:?} ~ {}", best_plies, best_score);
+            for ply in best_plies.iter() {
+                println!("Best move: {} ~ {}", ply, best_score);
+            }
         }
 
+        self.seen_states.insert(backend.state_hash(), best_score);
         best_score
     }
 
     fn alpha_beta(
-        &self,
+        &mut self,
         backend: &Box<dyn Backend>,
         depth: usize,
         mut alpha: f64,
         mut beta: f64,
         maximizing: bool,
     ) -> f64 {
-        todo!("Implement gameover edge case");
+        if let Some(&cached_score) = self.seen_states.get(&backend.state_hash()) {
+            return cached_score;
+        }
+        let gamestate = backend.get_gamestate();
+        if gamestate.is_over() {
+            if gamestate.is_draw() {
+                self.seen_states.insert(backend.state_hash(), 0.0);
+                return 0.0;
+            }
+            let score = if Some(self.maximizing_color) == gamestate.winner() { f64::MAX } else { f64::MIN };
+            self.seen_states.insert(backend.state_hash(), score);
+            return score;
+        }
 
-        // if depth == 0 {
-        //     return static_eval::static_eval(backend);
-        // }
+        if depth == 0 {
+            let score = static_eval::static_eval(backend, self.maximizing_color);
+            self.seen_states.insert(backend.state_hash(), score);
+            return score;
+        }
 
-        // let mut best_score = if maximizing { f64::MIN } else { f64::MAX };
+        let mut best_score = if maximizing { f64::MIN } else { f64::MAX };
 
-        // for ply in
-        //     backend.get_legal_plies(if maximizing { self.maximizing_color } else { self.maximizing_color.opposite() })
-        // {
-        //     let mut backend_clone = backend.clone();
-        //     backend_clone.ply(ply.clone());
+        for ply in
+            backend.get_legal_plies(if maximizing { self.maximizing_color } else { self.maximizing_color.opposite() })
+        {
+            let mut backend_clone = backend.clone();
+            backend_clone.ply(ply.clone());
 
-        //     let score = self.alpha_beta(&backend_clone, depth - 1, alpha, beta, !maximizing);
+            let score = self.alpha_beta(&backend_clone, depth - 1, alpha, beta, !maximizing);
 
-        //     if maximizing {
-        //         best_score = best_score.max(score);
-        //         alpha = alpha.max(score);
-        //     } else {
-        //         best_score = best_score.min(score);
-        //         beta = beta.min(score);
-        //     }
+            if maximizing {
+                best_score = best_score.max(score);
+                alpha = alpha.max(score);
+            } else {
+                best_score = best_score.min(score);
+                beta = beta.min(score);
+            }
 
-        //     if beta <= alpha {
-        //         break;
-        //     }
-        // }
+            if beta <= alpha {
+                break;
+            }
+        }
+
+        self.seen_states.insert(backend.state_hash(), best_score);
+        best_score
     }
 }

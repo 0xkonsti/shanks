@@ -1,5 +1,7 @@
 pub(crate) mod bitboard;
 
+use std::hash::{Hash, Hasher};
+
 use super::{Color, GameState, Piece, Ply, Square};
 
 pub trait Backend: BackendClone {
@@ -43,6 +45,9 @@ pub trait Backend: BackendClone {
 
     /// Returns the number of king pieces for the given color.
     fn king_count(&self, color: Color) -> u8;
+
+    /// Returns a hashed representation of the current state of the board.
+    fn state_hash(&self) -> u64;
 }
 
 pub trait BackendClone {
@@ -61,5 +66,11 @@ where
 impl Clone for Box<dyn Backend> {
     fn clone(&self) -> Box<dyn Backend> {
         self.clone_box()
+    }
+}
+
+impl Hash for Box<dyn Backend> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.state_hash().hash(state);
     }
 }

@@ -262,4 +262,8 @@ impl Backend for BitBoard {
     fn king_count(&self, color: Color) -> u8 {
         self.get_color_field(color).intersection(self.kings).count() as u8
     }
+
+    fn state_hash(&self) -> u64 {
+        self.get_hash()
+    }
 }

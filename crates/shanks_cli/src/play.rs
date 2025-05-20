@@ -1,14 +1,17 @@
 use std::io::Write;
 
-use shanks_core::board::Board;
+use shanks_core::board::{Board, Color};
+use shanks_engine::Engine;
 
 use crate::cli::PlayArgs;
 
 pub fn play(args: PlayArgs) {
     let mut board = Board::default();
+    let mut engine = Engine::new(Color::White);
     print!("{esc}c", esc = 27 as char);
     println!("Playing a game of checkers...");
     println!("{}", board);
+    println!("Value: {}", engine.evaluate(&board));
     println!("{} to move", board.to_move());
     println!("Legal plies:");
     board.legal_plies();
@@ -45,6 +48,7 @@ pub fn play(args: PlayArgs) {
                 break;
             }
             println!("{}", board);
+            println!("Value: {}", engine.evaluate(&board));
             println!("{} to move", board.to_move());
             println!("Legal plies:");
             board.legal_plies();
